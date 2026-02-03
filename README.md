@@ -1,4 +1,4 @@
-# 3D Banana Runner - Cosmic Harvest
+# 3D Banana Runner
 
 A 3D endless runner built with React, Three.js (@react-three/fiber), and a Node/Express/MongoDB backend. Demonstrates four themes: Virtual Identity, Interoperability, Event-Driven Programming, and Version Control.
 
