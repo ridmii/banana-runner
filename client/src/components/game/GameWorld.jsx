@@ -1,5 +1,5 @@
-import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Vector3 } from 'three';
 import EnvironmentComponent from './Environment.jsx';
 import Terrain from './Terrain.jsx';
 import Player from './Player.jsx';
@@ -11,11 +11,27 @@ import ParticleSystem from './ParticleSystem.jsx';
 import QuestionOverlay from './QuestionOverlay.jsx';
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { getBananaQuestion } from '../../services/bananaService.js';
+import { api } from '../../services/api.js';
 import { initAudio, playCollect, playError, playSuccess } from '../../utils/sfx.js';
+import { gameEvents } from '../../utils/events.js';
 
 function GameLoop({ running, paused, onTick }) {
   useFrame((_, delta) => {
     if (running && !paused) onTick(delta);
+  });
+  return null;
+}
+
+function CameraRig({ playerX }) {
+  const { camera } = useThree();
+  const target = new Vector3();
+  useFrame((_, delta) => {
+    // Desired camera position: slightly right/left with player, higher and behind
+    const desired = new Vector3(playerX * 1.2, 3.6, 8);
+    camera.position.lerp(desired, Math.min(1, 2.0 * delta));
+    // Look far ahead down the track
+    target.set(playerX, 1.4, -20);
+    camera.lookAt(target);
   });
   return null;
 }
@@ -46,8 +62,44 @@ export default function GameWorld() {
   const [character, setCharacter] = useState(null);
   const [feedback, setFeedback] = useState(null);
   const [lastQuestionImage, setLastQuestionImage] = useState(null);
+  const [prefetchedQuestion, setPrefetchedQuestion] = useState(null);
 
-  const startRun = () => { setStarted(true); setRunning(true); setPaused(false); setScore(0); setLives(3); setTime(0); setPlayerX(0); setDistance(0); setLastSpawnDist(0); initAudio(); };
+  const startRun = () => { setStarted(true); setRunning(true); setPaused(false); setScore(0); setLives(3); setTime(0); setPlayerX(0); setDistance(0); setLastSpawnDist(0); initAudio(); prefetchNext(); };
+
+  const prefetchNext = useCallback(async () => {
+    try {
+      const q = await getBananaQuestion();
+      setPrefetchedQuestion(q);
+    } catch (_) {
+      // ignore prefetch errors
+    }
+  }, []);
+
+  // Touch/UI controls
+  const onMoveLeft = useCallback(() => {
+    if (!running || paused) return;
+    setTargetX((x) => Math.max(-1, Math.round(x - 1)));
+    setTilt(0.25);
+  }, [running, paused]);
+
+  const onMoveRight = useCallback(() => {
+    if (!running || paused) return;
+    setTargetX((x) => Math.min(1, Math.round(x + 1)));
+    setTilt(-0.25);
+  }, [running, paused]);
+
+  const onJump = useCallback(() => {
+    if (!running || paused) return;
+    if (playerY <= 1.001 && !isCrouching) {
+      setVelY(8);
+    }
+  }, [running, paused, playerY, isCrouching]);
+
+  const onSlide = useCallback(() => {
+    if (!running || paused) return;
+    setIsCrouching(true);
+    setCrouchTimer(0.6);
+  }, [running, paused]);
 
   useEffect(() => {
     const onKey = (e) => {
@@ -182,14 +234,11 @@ export default function GameWorld() {
         setObstacles((o) => o.filter((oo) => oo.id !== ob.id));
         (async () => {
           try {
-            let tries = 0;
-            let q = await getBananaQuestion();
-            while (tries < 3 && q?.image && q.image === lastQuestionImage) {
-              q = await getBananaQuestion();
-              tries++;
-            }
+            let q = prefetchedQuestion;
+            if (!q) q = await getBananaQuestion();
             setLastQuestionImage(q?.image || null);
             setQuestion(q);
+            setPrefetchedQuestion(null);
           } catch (_) {
             setQuestion({ image: null, answer: null });
           }
@@ -197,7 +246,7 @@ export default function GameWorld() {
         break;
       }
     }
-  }, [playerZ, playerX, obstacles, paused, distance, targetX, isCrouching, lastQuestionImage]);
+  }, [playerZ, playerX, obstacles, paused, distance, targetX, isCrouching, lastQuestionImage, prefetchedQuestion]);
 
   const submitAnswer = async (value) => {
     const userAnswer = Number(String(value).trim());
@@ -224,6 +273,7 @@ export default function GameWorld() {
         setQuestion(null);
         setFeedback(null);
         setPaused(false);
+        prefetchNext();
       }, 600);
     } else {
       try { playError(); } catch {}
@@ -235,14 +285,35 @@ export default function GameWorld() {
     setLives((l) => l - 1);
     setQuestion(null);
     setPaused(false);
+    prefetchNext();
     if (lives - 1 <= 0) { setRunning(false); setStarted(false); }
   };
+
+  const submitFinalScore = useCallback(async () => {
+    try {
+      await api.post('/api/game/score', {
+        score,
+        gameMode: 'solo',
+        duration: Math.floor(time),
+        bananasCollected: score,
+      });
+      try { gameEvents.emit('score:saved', { score, bananasCollected: score, duration: Math.floor(time) }); } catch {}
+    } catch (_) {
+      // swallow errors to avoid crashing UI
+    }
+  }, [score, time]);
+
+  useEffect(() => {
+    if (!running && started === false && score > 0) {
+      submitFinalScore();
+    }
+  }, [running, started]);
 
   return (
     <div style={{ height: 'calc(100vh - 50px)' }}>
       <Canvas shadows dpr={[1, 2]}>        
         <color attach="background" args={["#87CEEB"]} />
-        <PerspectiveCamera makeDefault position={[0, 2, 10]} />
+        <CameraRig playerX={playerX} />
 
         {/* Lighting */}
         <ambientLight intensity={0.5} />
@@ -261,17 +332,27 @@ export default function GameWorld() {
         <PowerUpSpawner />
         <ParticleSystem count={300} color="#ffffff" />
 
-        {/* UI */}
-        <UIOverlay score={score} time={time} lives={lives} started={started} onStart={startRun} character={character} onSelectCharacter={setCharacter} />
-        {paused && (
-          <QuestionOverlay image={question?.image} onSubmit={submitAnswer} onCancel={cancelQuestion} feedback={feedback} />
-        )}
-
         <GameLoop running={running} paused={paused} onTick={tick} />
 
-        {/* Controls for testing */}
-        <OrbitControls />
+        {/* OrbitControls disabled to prevent touchpad panning over gameplay */}
       </Canvas>
+      {/* UI Overlays as pure DOM above Canvas */}
+      <UIOverlay
+        score={score}
+        time={time}
+        lives={lives}
+        started={started}
+        onStart={startRun}
+        character={character}
+        onSelectCharacter={setCharacter}
+        onMoveLeft={onMoveLeft}
+        onMoveRight={onMoveRight}
+        onJump={onJump}
+        onSlide={onSlide}
+      />
+      {paused && (
+        <QuestionOverlay image={question?.image} onSubmit={submitAnswer} onCancel={cancelQuestion} feedback={feedback} />
+      )}
     </div>
   );
 }
