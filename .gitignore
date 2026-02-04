@@ -1,0 +1,34 @@
+# Node
+node_modules/
+**/node_modules/
+
+# Builds
+/dist/
+**/dist/
+/build/
+**/build/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Env
+.env
+**/.env
+.env.local
+.env.*.local
+server/.env
+
+# VS Code
+.vscode/
+
+# Coverage
+coverage/
+
+# Docker
+*.pid
+
+# Misc
+.DS_Store
+Thumbs.db

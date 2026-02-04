@@ -1,0 +1,25 @@
+{
+  "name": "banana-runner",
+  "version": "1.0.0",
+  "description": "A 3D endless runner built with React, Three.js (@react-three/fiber), and a Node/Express/MongoDB backend. Demonstrates four themes: Virtual Identity, Interoperability, Event-Driven Programming, and Version Control.",
+  "main": "index.js",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "dev": "concurrently \"npm run dev -w client\" \"npm run dev -w server\"",
+    "dev:client": "npm run dev -w client",
+    "dev:server": "npm run dev -w server"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
