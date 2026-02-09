@@ -9,18 +9,32 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const AUTH_DISABLED = import.meta.env.VITE_DISABLE_AUTH === 'true';
 
+  const devUser = {
+    id: 'dev-user',
+    username: 'Developer',
+    email: 'dev@example.com',
+    role: 'user',
+  };
+
   useEffect(() => {
-    if (AUTH_DISABLED) {
-      setUser({ id: 'dev-user', username: 'DevUser', role: 'admin' });
-      setLoading(false);
-      return;
-    }
     (async () => {
+      if (AUTH_DISABLED) {
+        setUser(devUser);
+        setLoading(false);
+        return;
+      }
       try {
         const data = await fetchMe();
         setUser(data.user);
+        try { localStorage.setItem('authUser', JSON.stringify(data.user)); } catch {}
       } catch (_) {
-        setUser(null);
+        // Fallback to cached user if available to avoid UI reset
+        try {
+          const cached = JSON.parse(localStorage.getItem('authUser') || 'null');
+          setUser(cached);
+        } catch {
+          setUser(null);
+        }
       } finally {
         setLoading(false);
       }
@@ -28,10 +42,16 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = async () => {
+    if (AUTH_DISABLED) {
+      setUser(null);
+      try { localStorage.removeItem('authUser'); } catch {}
+      return;
+    }
     try {
       await apiLogout();
     } finally {
       setUser(null);
+      try { localStorage.removeItem('authUser'); } catch {}
     }
   };
 
