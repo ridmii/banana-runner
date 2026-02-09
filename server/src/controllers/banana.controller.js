@@ -1,5 +1,7 @@
 import { fetchBanana } from '../services/bananaAPI.js';
 
+const FALLBACK_IMAGE = 'https://www.sanfoh.com/uob/banana/data/t64d1fda6c163888c5759dc3b79n99.png';
+
 export async function getBanana(req, res) {
   try {
     const data = await fetchBanana();
@@ -15,7 +17,8 @@ export async function getBanana(req, res) {
     const answer = rawAnswer != null ? Number(String(rawAnswer).trim()) : null;
     return res.json({ image, answer });
   } catch (e) {
-    return res.status(500).json({ message: 'Banana API error' });
+    // Return a graceful fallback to avoid client errors and allow gameplay
+    return res.json({ image: FALLBACK_IMAGE, answer: null });
   }
 }
 

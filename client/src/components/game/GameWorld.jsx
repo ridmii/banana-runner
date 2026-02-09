@@ -9,6 +9,7 @@ import PowerUpSpawner from './PowerUpSpawner.jsx';
 import UIOverlay from './UIOverlay.jsx';
 import ParticleSystem from './ParticleSystem.jsx';
 import QuestionOverlay from './QuestionOverlay.jsx';
+import LevelUnlockCelebration from './LevelUnlockCelebration.jsx';
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { getBananaQuestion } from '../../services/bananaService.js';
 import { api } from '../../services/api.js';
@@ -63,6 +64,24 @@ export default function GameWorld() {
   const [feedback, setFeedback] = useState(null);
   const [lastQuestionImage, setLastQuestionImage] = useState(null);
   const [prefetchedQuestion, setPrefetchedQuestion] = useState(null);
+  const [unlockedLevel, setUnlockedLevel] = useState(null);
+
+  // Check for level unlocks based on total bananas
+  const checkLevelUnlock = useCallback((totalBananas) => {
+    const previousTotal = totalBananas - 1; // Previous total before this banana
+    const levels = [
+      { level: 1, required: 25 },
+      { level: 2, required: 75 },
+      { level: 3, required: 150 }
+    ];
+
+    for (const levelInfo of levels) {
+      if (totalBananas >= levelInfo.required && previousTotal < levelInfo.required) {
+        setUnlockedLevel(levelInfo.level);
+        break;
+      }
+    }
+  }, []);
 
   const startRun = () => { setStarted(true); setRunning(true); setPaused(false); setScore(0); setLives(3); setTime(0); setPlayerX(0); setDistance(0); setLastSpawnDist(0); initAudio(); prefetchNext(); };
 
@@ -202,6 +221,10 @@ export default function GameWorld() {
             const ns = s + 1;
             const total = Number(localStorage.getItem('totalBananas') || '0') + 1;
             localStorage.setItem('totalBananas', String(total));
+            
+            // Check for level unlock
+            checkLevelUnlock(total);
+            
             // Update local leaderboard fallback
             try {
               const lb = JSON.parse(localStorage.getItem('leaderboard') || '[]');
@@ -353,6 +376,12 @@ export default function GameWorld() {
       {paused && (
         <QuestionOverlay image={question?.image} onSubmit={submitAnswer} onCancel={cancelQuestion} feedback={feedback} />
       )}
+      
+      {/* Level Unlock Celebration */}
+      <LevelUnlockCelebration 
+        level={unlockedLevel} 
+        onComplete={() => setUnlockedLevel(null)} 
+      />
     </div>
   );
 }
