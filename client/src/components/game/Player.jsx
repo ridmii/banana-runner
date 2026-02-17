@@ -3,12 +3,12 @@ import { useRef, useState } from 'react';
 import CharacterModel from './CharacterModel.jsx';
 import { RealisticMonkey, RealisticRobot } from './RealisticCharacters.jsx';
 
-function Monkey() {
-  return <RealisticMonkey />;
+function Monkey({ crouch, tilt }) {
+  return <RealisticMonkey crouch={crouch} tilt={tilt} />;
 }
 
-function Robot() {
-  return <RealisticRobot />;
+function Robot({ crouch, tilt }) {
+  return <RealisticRobot crouch={crouch} tilt={tilt} />;
 }
 
 export default function Player({ position = [0, 1, 0], character = 'monkey', tilt = 0, crouch = false }) {
@@ -36,9 +36,9 @@ export default function Player({ position = [0, 1, 0], character = 'monkey', til
         <CharacterModel name={character} />
       ) : (
         <>
-          {character === 'monkey' && <Monkey />}
-          {character === 'robot' && <Robot />}
-          {!character && <Monkey />} {/* Default to monkey */}
+          {character === 'monkey' && <Monkey crouch={crouch} tilt={tilt} />}
+          {character === 'robot' && <Robot crouch={crouch} tilt={tilt} />}
+          {!character && <Monkey crouch={crouch} tilt={tilt} />} {/* Default to monkey */}
         </>
       )}
       <mesh position={[0, -0.9, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[1.5, 1.5, 1]}>

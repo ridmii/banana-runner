@@ -185,9 +185,21 @@ export default function GameWorld() {
       return nt;
     });
 
-    // Move world items forward
-    setBananas((b) => b.map((p) => [p[0], p[1], p[2] + speed * delta]).filter((p) => p[2] < 2));
-    setObstacles((o) => o.map((ob) => ({ ...ob, position: [ob.position[0], ob.position[1], ob.position[2] + speed * delta] })).filter((ob) => ob.position[2] < 2));
+    // ✅ FIXED - Only move collectibles and obstacles (NOT environment objects)
+    setBananas((b) => 
+      b.map((p) => [p[0], p[1], p[2] + speed * delta])
+       .filter((p) => p[2] < 2)
+    );
+    
+    setObstacles((o) => 
+      o.map((ob) => ({ 
+        ...ob, 
+        position: [ob.position[0], ob.position[1], ob.position[2] + speed * delta] 
+      })).filter((ob) => ob.position[2] < 2)
+    );
+    
+    // 🔍 DEBUG: Environment objects should NEVER be moved here
+    // If you see trees/rocks moving, check that they're not in obstacles array
 
     // Spawn based on distance
     setLastSpawnDist((lsd) => {
@@ -338,22 +350,50 @@ export default function GameWorld() {
         <color attach="background" args={["#87CEEB"]} />
         <CameraRig playerX={playerX} />
 
-        {/* Lighting */}
-        <ambientLight intensity={0.5} />
-        <directionalLight position={[10, 15, 10]} intensity={1} castShadow shadow-mapSize={[1024, 1024]} />
-        <hemisphereLight intensity={0.3} groundColor="brown" />
+        {/* PRODUCTION-READY LIGHTING SYSTEM */}
+        <ambientLight intensity={0.3} color="#E6F3FF" />
+        <directionalLight 
+          position={[15, 25, 15]} 
+          intensity={1.0} 
+          color="#FFF8DC" 
+          castShadow
+          shadow-mapSize={[2048, 2048]}
+          shadow-camera-far={100}
+          shadow-camera-left={-25}
+          shadow-camera-right={25}
+          shadow-camera-top={25}
+          shadow-camera-bottom={-25}
+          shadow-bias={-0.0001}
+        />
+        <directionalLight position={[-10, 20, 10]} intensity={0.3} color="#B0C4DE" />
+        <hemisphereLight intensity={0.4} groundColor="#8B7355" color="#87CEEB" />
+        <pointLight position={[0, 8, 6]} intensity={0.5} distance={15} decay={2} />
 
-        {/* Atmosphere */}
-        <fog attach="fog" args={["#87CEEB", 20, 100]} />
-        <EnvironmentComponent />
+        {/* CLEAN SCENE ARCHITECTURE - University Project Standard */}
+        
+        {/* STATIC ENVIRONMENT: Trees, rocks, terrain - NEVER moves */}
+        <group name="StaticEnvironment" userData={{ static: true, moveInGameLoop: false }} position={[0, 0, 0]}>
+          <fog attach="fog" args={["#87CEEB", 20, 100]} />
+          <EnvironmentComponent />
+          <Terrain />
+        </group>
 
-        {/* Game world */}
-        <Terrain />
-        <Player position={[playerX, playerY, playerZ]} character={character || 'monkey'} tilt={tilt} crouch={isCrouching} />
-        <BananaSpawner bananas={bananas} />
-        <ObstacleSpawner obstacles={obstacles} />
-        <PowerUpSpawner />
-        <ParticleSystem count={300} color="#ffffff" />
+        {/* DYNAMIC GAMEPLAY: Objects that move toward player */}
+        <group name="DynamicGameplay" userData={{ static: false, moveInGameLoop: true }}>
+          <BananaSpawner bananas={bananas} />
+          <ObstacleSpawner obstacles={obstacles} />
+          <PowerUpSpawner />
+        </group>
+
+        {/* PLAYER CHARACTER: Controlled by user input */}
+        <group name="PlayerCharacter" userData={{ static: false, moveInGameLoop: false }}>
+          <Player position={[playerX, playerY, playerZ]} character={character || 'monkey'} tilt={tilt} crouch={isCrouching} />
+        </group>
+
+        {/* VISUAL EFFECTS: Particles and atmosphere */}
+        <group name="VisualEffects" userData={{ static: false, moveInGameLoop: false }}>
+          <ParticleSystem count={300} color="#ffffff" />
+        </group>
 
         <GameLoop running={running} paused={paused} onTick={tick} />
 
