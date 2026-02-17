@@ -10,53 +10,10 @@ import Navbar from './components/ui/Navbar.jsx';
 
 function Protected({ children, role }) {
   const { user, loading } = useAuthContext();
-  
-  // Still loading authentication state
-  if (loading) {
-    return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '50vh',
-        color: 'var(--text)' 
-      }}>
-        Loading...
-      </div>
-    );
-  }
-  
-  // User not authenticated
+  if (loading) return <div>Loading...</div>;
   if (!user) return <Navigate to="/login" replace />;
-  
-  // User doesn't have required role
   if (role && user.role !== role) return <Navigate to="/" replace />;
-  
   return children;
-}
-
-function LoginOrMainMenu() {
-  const { user, loading } = useAuthContext();
-  
-  if (loading) {
-    return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '50vh',
-        color: 'var(--text)' 
-      }}>
-        Loading...
-      </div>
-    );
-  }
-  
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-  
-  return <MainMenu />;
 }
 
 export default function App() {
@@ -66,7 +23,7 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/" element={<LoginOrMainMenu />} />
+        <Route path="/" element={<MainMenu />} />
         <Route
           path="/game"
           element={
