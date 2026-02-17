@@ -1,4 +1,4 @@
-import { Float, useTexture } from '@react-three/drei';
+import { useTexture } from '@react-three/drei';
 import { Suspense } from 'react';
 
 function LaneMarkers() {
@@ -34,27 +34,21 @@ export default function Terrain() {
         )}
       </mesh>
 
-      {/* Floating islands */}
-      <Float speed={0.5} rotationIntensity={0.01}>
-        <mesh position={[5, 2, -10]} castShadow receiveShadow>
-          <icosahedronGeometry args={[3, 1]} />
-          <meshStandardMaterial color="#8FBC8F" roughness={0.8} />
-        </mesh>
-      </Float>
+      {/* Static background islands - NO ANIMATION */}
+      <mesh position={[5, 2, -10]} castShadow receiveShadow>
+        <icosahedronGeometry args={[3, 1]} />
+        <meshStandardMaterial color="#8FBC8F" roughness={0.8} />
+      </mesh>
 
-      <Float speed={0.7} rotationIntensity={0.02}>
-        <mesh position={[-8, 3, -15]} castShadow receiveShadow>
-          <icosahedronGeometry args={[2.5, 1]} />
-          <meshStandardMaterial color="#228B22" roughness={0.9} />
-        </mesh>
-      </Float>
+      <mesh position={[-8, 3, -15]} castShadow receiveShadow>
+        <icosahedronGeometry args={[2.5, 1]} />
+        <meshStandardMaterial color="#228B22" roughness={0.9} />
+      </mesh>
 
-      <Float speed={0.3} rotationIntensity={0.015}>
-        <mesh position={[12, 1.5, -20]} castShadow receiveShadow>
-          <icosahedronGeometry args={[4, 1]} />
-          <meshStandardMaterial color="#32CD32" roughness={0.7} />
-        </mesh>
-      </Float>
+      <mesh position={[12, 1.5, -20]} castShadow receiveShadow>
+        <icosahedronGeometry args={[4, 1]} />
+        <meshStandardMaterial color="#32CD32" roughness={0.7} />
+      </mesh>
 
       <LaneMarkers />
     </Suspense>
