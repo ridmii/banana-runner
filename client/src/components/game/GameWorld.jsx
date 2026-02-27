@@ -10,7 +10,7 @@ import UIOverlay from './UIOverlay.jsx';
 import ParticleSystem from './ParticleSystem.jsx';
 import QuestionOverlay from './QuestionOverlay.jsx';
 import LevelUnlockCelebration from './LevelUnlockCelebration.jsx';
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { getBananaQuestion } from '../../services/bananaService.js';
 import { api } from '../../services/api.js';
 import { initAudio, playCollect, playError, playSuccess } from '../../utils/sfx.js';
@@ -45,12 +45,18 @@ export default function GameWorld() {
   const [lives, setLives] = useState(3);
   const [time, setTime] = useState(0);
   const [playerX, setPlayerX] = useState(0); // current lane position
-  const [targetX, setTargetX] = useState(0); // lanes: -1,0,1
   const [tilt, setTilt] = useState(0);
   const [playerY, setPlayerY] = useState(1); // base height
-  const [velY, setVelY] = useState(0);
   const [isCrouching, setIsCrouching] = useState(false);
-  const [crouchTimer, setCrouchTimer] = useState(0);
+
+  // Physics refs — source of truth for frame-accurate, jitter-free movement
+  const playerXRef = useRef(0);
+  const targetXRef = useRef(0);
+  const tiltRef = useRef(0);
+  const playerYRef = useRef(1);
+  const velYRef = useRef(0);
+  const crouchTimerRef = useRef(0);
+  const isCrouchingRef = useRef(false);
   const [playerZ] = useState(0); // keep player near origin; move world towards player
   const [bananas, setBananas] = useState([[1, 1, -15], [-1, 1.2, -22], [0.5, 1.1, -30]]);
   const [obstacles, setObstacles] = useState([
@@ -83,7 +89,16 @@ export default function GameWorld() {
     }
   }, []);
 
-  const startRun = () => { setStarted(true); setRunning(true); setPaused(false); setScore(0); setLives(3); setTime(0); setPlayerX(0); setDistance(0); setLastSpawnDist(0); initAudio(); prefetchNext(); };
+  const startRun = () => {
+    setStarted(true); setRunning(true); setPaused(false); setScore(0); setLives(3); setTime(0);
+    setPlayerX(0); setPlayerY(1); setTilt(0); setIsCrouching(false);
+    setDistance(0); setLastSpawnDist(0);
+    // Reset physics refs
+    playerXRef.current = 0; targetXRef.current = 0; tiltRef.current = 0;
+    playerYRef.current = 1; velYRef.current = 0;
+    crouchTimerRef.current = 0; isCrouchingRef.current = false;
+    initAudio(); prefetchNext();
+  };
 
   const prefetchNext = useCallback(async () => {
     try {
@@ -94,96 +109,91 @@ export default function GameWorld() {
     }
   }, []);
 
-  // Touch/UI controls
+  // Touch/UI controls (ref-based for instant response)
   const onMoveLeft = useCallback(() => {
     if (!running || paused) return;
-    setTargetX((x) => Math.max(-1, Math.round(x - 1)));
-    setTilt(0.25);
+    targetXRef.current = Math.max(-1, Math.round(targetXRef.current - 1));
+    tiltRef.current = 0.25;
   }, [running, paused]);
 
   const onMoveRight = useCallback(() => {
     if (!running || paused) return;
-    setTargetX((x) => Math.min(1, Math.round(x + 1)));
-    setTilt(-0.25);
+    targetXRef.current = Math.min(1, Math.round(targetXRef.current + 1));
+    tiltRef.current = -0.25;
   }, [running, paused]);
 
   const onJump = useCallback(() => {
     if (!running || paused) return;
-    if (playerY <= 1.001 && !isCrouching) {
-      setVelY(8);
+    if (playerYRef.current <= 1.01 && !isCrouchingRef.current) {
+      velYRef.current = 8;
     }
-  }, [running, paused, playerY, isCrouching]);
+  }, [running, paused]);
 
   const onSlide = useCallback(() => {
     if (!running || paused) return;
+    isCrouchingRef.current = true;
+    crouchTimerRef.current = 0.6;
     setIsCrouching(true);
-    setCrouchTimer(0.6);
   }, [running, paused]);
 
   useEffect(() => {
     const onKey = (e) => {
       if (!running || paused) return;
       if (e.key === 'ArrowLeft') {
-        setTargetX((x) => Math.max(-1, Math.round(x - 1)));
-        setTilt(0.25);
+        targetXRef.current = Math.max(-1, Math.round(targetXRef.current - 1));
+        tiltRef.current = 0.25;
       }
       if (e.key === 'ArrowRight') {
-        setTargetX((x) => Math.min(1, Math.round(x + 1)));
-        setTilt(-0.25);
+        targetXRef.current = Math.min(1, Math.round(targetXRef.current + 1));
+        tiltRef.current = -0.25;
       }
       if (e.key === ' ' || e.key === 'ArrowUp' || e.key.toLowerCase() === 'w') {
-        // jump if grounded and not crouching
-        if (playerY <= 1.001 && !isCrouching) {
-          setVelY(8);
+        if (playerYRef.current <= 1.01 && !isCrouchingRef.current) {
+          velYRef.current = 8;
         }
       }
       if (e.key === 'ArrowDown' || e.key.toLowerCase() === 's') {
-        // start crouch/slide
+        isCrouchingRef.current = true;
+        crouchTimerRef.current = 0.6;
         setIsCrouching(true);
-        setCrouchTimer(0.6);
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [running, paused, playerY, isCrouching]);
+  }, [running, paused]);
 
   const tick = useCallback((delta) => {
     const speed = 8; // units per second; world moves towards player
     setTime((t) => t + delta);
     setDistance((d) => d + speed * delta);
-    // Smooth lane movement
-    setPlayerX((x) => {
-      const lerp = (a, b, k) => a + (b - a) * k;
-      return lerp(x, targetX, Math.min(1, 8 * delta));
-    });
-    // Decay tilt back to 0
-    setTilt((v) => {
-      const decay = 6 * delta;
-      const nv = Math.abs(v) < 0.01 ? 0 : v + (v > 0 ? -decay : decay);
-      return nv;
-    });
 
-    // Jump/Gravity
-    setVelY((vyPrev) => {
-      const newVy = vyPrev - 20 * delta; // gravity
-      setPlayerY((y) => {
-        let ny = y + newVy * delta;
-        if (ny <= 1) {
-          ny = 1;
-          // lock to ground
-          return 1;
-        }
-        return ny;
-      });
-      return newVy;
-    });
+    // Smooth lane movement (ref-based, eliminates React batching delay)
+    const lerpSpeed = 12;
+    playerXRef.current += (targetXRef.current - playerXRef.current) * Math.min(1, lerpSpeed * delta);
+    setPlayerX(playerXRef.current);
+
+    // Smooth tilt decay (exponential, no oscillation)
+    tiltRef.current *= Math.max(0, 1 - 8 * delta);
+    if (Math.abs(tiltRef.current) < 0.005) tiltRef.current = 0;
+    setTilt(tiltRef.current);
+
+    // Jump/Gravity (ref-based for frame-accurate physics)
+    velYRef.current -= 20 * delta;
+    playerYRef.current += velYRef.current * delta;
+    if (playerYRef.current <= 1) {
+      playerYRef.current = 1;
+      velYRef.current = 0; // Reset velocity on ground — prevents accumulation jitter
+    }
+    setPlayerY(playerYRef.current);
 
     // Crouch timer decay
-    setCrouchTimer((t) => {
-      const nt = Math.max(0, t - delta);
-      if (nt === 0 && isCrouching) setIsCrouching(false);
-      return nt;
-    });
+    if (crouchTimerRef.current > 0) {
+      crouchTimerRef.current = Math.max(0, crouchTimerRef.current - delta);
+      if (crouchTimerRef.current === 0 && isCrouchingRef.current) {
+        isCrouchingRef.current = false;
+        setIsCrouching(false);
+      }
+    }
 
     // ✅ FIXED - Only move collectibles and obstacles (NOT environment objects)
     setBananas((b) => 
@@ -225,7 +235,7 @@ export default function GameWorld() {
     setBananas((b) => {
       const remaining = [];
       for (const p of b) {
-        const dx = Math.abs(p[0] - playerX);
+        const dx = Math.abs(p[0] - playerXRef.current);
         const dz = Math.abs(p[2] - playerZ);
         if (dx < 0.6 && Math.abs(dz) < 0.8) {
           setScore((s) => {
@@ -253,14 +263,14 @@ export default function GameWorld() {
       return remaining;
     });
     for (const ob of obstacles) {
-      const dx = Math.abs(ob.position[0] - playerX);
+      const dx = Math.abs(ob.position[0] - playerXRef.current);
       const dz = Math.abs(ob.position[2] - playerZ);
       if (!paused && dx < 0.7 && Math.abs(dz) < 0.8) {
         // Ability-based avoidance: jump over rocks, slide under logs
-        if (ob.type === 'rock' && playerY > 1.4) {
+        if (ob.type === 'rock' && playerYRef.current > 1.4) {
           continue; // jumped over
         }
-        if (ob.type === 'log' && isCrouching) {
+        if (ob.type === 'log' && isCrouchingRef.current) {
           continue; // slid under
         }
         setPaused(true);
@@ -281,7 +291,7 @@ export default function GameWorld() {
         break;
       }
     }
-  }, [playerZ, playerX, obstacles, paused, distance, targetX, isCrouching, lastQuestionImage, prefetchedQuestion]);
+  }, [playerZ, obstacles, paused, distance, prefetchedQuestion, checkLevelUnlock]);
 
   const submitAnswer = async (value) => {
     const userAnswer = Number(String(value).trim());
