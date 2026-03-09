@@ -13,7 +13,7 @@ function Robot({ crouch, tilt }) {
 
 export default function Player({ position = [0, 1, 0], character = 'monkey', tilt = 0, crouch = false }) {
   const modelRef = useRef();
-  // Smooth interpolation refs — eliminates micro-jitter between React state frames
+  // smoothing refs to reduce visual jitter
   const smoothX = useRef(position[0]);
   const smoothY = useRef(position[1]);
   const smoothTilt = useRef(0);
@@ -22,7 +22,7 @@ export default function Player({ position = [0, 1, 0], character = 'monkey', til
   
   useFrame((_, delta) => {
     if (modelRef.current) {
-      // Frame-rate independent visual smoothing (fast enough to feel responsive)
+      // interpolate visuals independently of frame rate
       const xLerp = Math.min(1, 18 * delta);
       const yLerp = Math.min(1, 22 * delta);
       smoothX.current += (position[0] - smoothX.current) * xLerp;
@@ -32,7 +32,7 @@ export default function Player({ position = [0, 1, 0], character = 'monkey', til
       modelRef.current.position.set(smoothX.current, smoothY.current, position[2]);
       modelRef.current.rotation.z = smoothTilt.current;
 
-      // Smooth crouch scale transition
+      // smooth crouch scale transition
       const targetSY = crouch ? 0.6 : 1;
       smoothScaleY.current += (targetSY - smoothScaleY.current) * Math.min(1, 12 * delta);
       const sXZ = crouch ? 1.05 : 1;
@@ -49,7 +49,7 @@ export default function Player({ position = [0, 1, 0], character = 'monkey', til
         <>
           {character === 'monkey' && <Monkey crouch={crouch} tilt={tilt} />}
           {character === 'robot' && <Robot crouch={crouch} tilt={tilt} />}
-          {!character && <Monkey crouch={crouch} tilt={tilt} />} {/* Default to monkey */}
+          {!character && <Monkey crouch={crouch} tilt={tilt} />} {/* default monkey */}
         </>
       )}
       <mesh position={[0, -0.9, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[1.5, 1.5, 1]}>

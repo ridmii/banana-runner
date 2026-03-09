@@ -7,7 +7,7 @@ export function initAudio() {
     if (ctx.state === 'suspended') ctx.resume();
     unlocked = true;
   } catch (_) {
-    // ignore
+    // ignore audio init errors
   }
 }
 
@@ -63,7 +63,7 @@ export function playSuccess() {
   const o1 = audio.createOscillator();
   const g1 = audio.createGain();
   o1.type = 'sine';
-  o1.frequency.setValueAtTime(523.25, t0); // C5
+  o1.frequency.setValueAtTime(523.25, t0); // C5 frequency
   g1.gain.setValueAtTime(0.0001, t0);
   g1.gain.exponentialRampToValueAtTime(0.18, t0 + 0.01);
   g1.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.18);

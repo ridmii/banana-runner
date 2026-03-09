@@ -17,7 +17,7 @@ export default function Login() {
       const data = await login({ email, password });
       setUser(data.user);
       try { localStorage.setItem('authUser', JSON.stringify(data.user)); } catch {}
-      navigate('/'); // Redirect to main menu (now protected)
+      navigate('/'); // redirect to main menu
     } catch (err) {
       setError('Login failed. Please check your credentials.');
     }

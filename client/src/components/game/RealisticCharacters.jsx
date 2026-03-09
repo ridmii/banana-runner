@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 
-// SEMI-REALISTIC MONKEY - Production Game Quality
+// semi-realistic monkey character
 function RealisticMonkey({ crouch = false, tilt = 0 }) {
   const monkeyRef = useRef();
   const leftArmRef = useRef();
@@ -29,14 +29,14 @@ function RealisticMonkey({ crouch = false, tilt = 0 }) {
       }
     }
     
-    // Natural head movement
+    // natural head movement
     if (headRef.current) {
       const time = state.clock.elapsedTime;
       headRef.current.rotation.y = Math.sin(time * 0.8) * 0.05;
       headRef.current.rotation.x = Math.sin(time * 1.2) * 0.02;
     }
     
-    // Realistic quadrupedal running animation
+    // running animation (arms & legs)
     if (leftArmRef.current && rightArmRef.current) {
       const armTime = state.clock.elapsedTime * 6; // Natural running pace
       leftArmRef.current.rotation.x = Math.sin(armTime) * 0.8;
@@ -53,11 +53,10 @@ function RealisticMonkey({ crouch = false, tilt = 0 }) {
       rightLegRef.current.rotation.x = Math.sin(legTime) * 0.6;
     }
     
-    // Complex tail animation - very characteristic of primates
+    // tail animation
     if (tailRef.current) {
       const tailTime = state.clock.elapsedTime;
-      tailRef.current.rotation.x = 0.7 + Math.sin(tailTime * 1.5) * 0.3;
-      tailRef.current.rotation.z = Math.sin(tailTime * 1.8) * 0.2;
+        // breathing and body posture tweaks
       tailRef.current.rotation.y = Math.sin(tailTime * 2.3) * 0.15;
     }
   });
@@ -225,8 +224,7 @@ function RealisticMonkey({ crouch = false, tilt = 0 }) {
   );
 }
 
-// Realistic Robot Character
-// SEMI-REALISTIC ROBOT - Industrial/Military Grade
+// semi-realistic robot character
 function RealisticRobot({ crouch = false, tilt = 0 }) {
   const robotRef = useRef();
   const eyeRef = useRef();
@@ -238,7 +236,7 @@ function RealisticRobot({ crouch = false, tilt = 0 }) {
   useFrame((state) => {
     if (robotRef.current) {
       const time = state.clock.elapsedTime;
-      // Precise mechanical idle hover
+      // mechanical idle hover
       robotRef.current.position.y = Math.sin(time * 2.5) * 0.008;
       robotRef.current.rotation.z = tilt * 0.15; // More stable than organic
       
@@ -250,7 +248,7 @@ function RealisticRobot({ crouch = false, tilt = 0 }) {
       }
     }
     
-    // Animated LED eyes - pulsing pattern
+    // LED eye glow
     if (eyeRef.current) {
       const glowTime = state.clock.elapsedTime * 3;
       const glowIntensity = 0.6 + Math.sin(glowTime) * 0.4;
@@ -261,7 +259,7 @@ function RealisticRobot({ crouch = false, tilt = 0 }) {
       });
     }
     
-    // Mechanical arm movement - precise and robotic
+    // mechanical arm movement
     if (leftArmRef.current && rightArmRef.current) {
       const armTime = state.clock.elapsedTime * 4; // Slower, more mechanical
       leftArmRef.current.rotation.x = Math.sin(armTime) * 0.3;
@@ -269,7 +267,7 @@ function RealisticRobot({ crouch = false, tilt = 0 }) {
       // Less shoulder movement - more rigid
     }
     
-    // Mechanical leg movement - hydraulic-style
+    // mechanical leg movement
     if (leftLegRef.current && rightLegRef.current) {
       const legTime = state.clock.elapsedTime * 4;
       leftLegRef.current.rotation.x = Math.sin(legTime + Math.PI) * 0.25;

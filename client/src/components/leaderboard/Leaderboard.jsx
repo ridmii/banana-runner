@@ -4,7 +4,7 @@ import { computeLevel } from '../../utils/level.js';
 import { gameEvents } from '../../utils/events.js';
 import { useAuthContext } from '../../context/AuthContext.jsx';
 
-// Using emoji icons instead of react-icons to avoid dependency issues
+// use emoji avatars/icons to avoid extra dependencies
 const getRankIcon = (position) => {
   switch (position) {
     case 1: return '🥇';
@@ -22,7 +22,7 @@ const getLevelIcon = (level) => {
 
 const getUserAvatar = (username, isCurrent) => {
   if (isCurrent) return '👤';
-  // Generate consistent avatar based on first letter
+  // generate a simple avatar from username initial
   const firstChar = username.charAt(0).toLowerCase();
   const avatars = {
     'a': '🐵', 'b': '🐱', 'c': '🐶', 'd': '🐺', 'e': '🦊', 'f': '🐯', 

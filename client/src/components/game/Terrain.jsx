@@ -18,7 +18,7 @@ export default function Terrain() {
   let grassTexture, rockTexture;
   try {
     grassTexture = useTexture('/assets/textures/grass.jpg');
-    grassTexture.wrapS = grassTexture.wrapT = 1000; // Repeat
+    grassTexture.wrapS = grassTexture.wrapT = 1000; //repeat texture
     rockTexture = useTexture('/assets/textures/rock.jpg');
   } catch (e) {}
 

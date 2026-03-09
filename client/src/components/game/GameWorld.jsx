@@ -15,6 +15,7 @@ import { getBananaQuestion } from '../../services/bananaService.js';
 import { api } from '../../services/api.js';
 import { initAudio, playCollect, playError, playSuccess } from '../../utils/sfx.js';
 import { gameEvents } from '../../utils/events.js';
+import { useAuthContext } from '../../context/AuthContext.jsx';
 
 function GameLoop({ running, paused, onTick }) {
   useFrame((_, delta) => {
@@ -27,10 +28,10 @@ function CameraRig({ playerX }) {
   const { camera } = useThree();
   const target = new Vector3();
   useFrame((_, delta) => {
-    // Desired camera position: slightly right/left with player, higher and behind
+    // position camera slightly behind and above player
     const desired = new Vector3(playerX * 1.2, 3.6, 8);
     camera.position.lerp(desired, Math.min(1, 2.0 * delta));
-    // Look far ahead down the track
+    // focus camera further ahead on the track
     target.set(playerX, 1.4, -20);
     camera.lookAt(target);
   });
@@ -38,18 +39,19 @@ function CameraRig({ playerX }) {
 }
 
 export default function GameWorld() {
+  const { user } = useAuthContext();
   const [started, setStarted] = useState(false);
   const [running, setRunning] = useState(false);
   const [paused, setPaused] = useState(false);
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
   const [time, setTime] = useState(0);
-  const [playerX, setPlayerX] = useState(0); // current lane position
+  const [playerX, setPlayerX] = useState(0);
   const [tilt, setTilt] = useState(0);
-  const [playerY, setPlayerY] = useState(1); // base height
+  const [playerY, setPlayerY] = useState(1);
   const [isCrouching, setIsCrouching] = useState(false);
 
-  // Physics refs — source of truth for frame-accurate, jitter-free movement
+  // physics refs for frame-accurate movement
   const playerXRef = useRef(0);
   const targetXRef = useRef(0);
   const tiltRef = useRef(0);
@@ -67,14 +69,21 @@ export default function GameWorld() {
   const [distance, setDistance] = useState(0);
   const [question, setQuestion] = useState(null);
   const [character, setCharacter] = useState(null);
+
+  // load preferred character from profile
+  useEffect(() => {
+    if (user?.preferredCharacter && !character) {
+      setCharacter(user.preferredCharacter);
+    }
+  }, [user?.preferredCharacter]);
   const [feedback, setFeedback] = useState(null);
   const [lastQuestionImage, setLastQuestionImage] = useState(null);
   const [prefetchedQuestion, setPrefetchedQuestion] = useState(null);
   const [unlockedLevel, setUnlockedLevel] = useState(null);
 
-  // Check for level unlocks based on total bananas
+  // check for level unlocks based on total bananas
   const checkLevelUnlock = useCallback((totalBananas) => {
-    const previousTotal = totalBananas - 1; // Previous total before this banana
+    const previousTotal = totalBananas - 1;
     const levels = [
       { level: 1, required: 25 },
       { level: 2, required: 75 },
@@ -93,7 +102,7 @@ export default function GameWorld() {
     setStarted(true); setRunning(true); setPaused(false); setScore(0); setLives(3); setTime(0);
     setPlayerX(0); setPlayerY(1); setTilt(0); setIsCrouching(false);
     setDistance(0); setLastSpawnDist(0);
-    // Reset physics refs
+    // reset physics refs
     playerXRef.current = 0; targetXRef.current = 0; tiltRef.current = 0;
     playerYRef.current = 1; velYRef.current = 0;
     crouchTimerRef.current = 0; isCrouchingRef.current = false;
@@ -109,7 +118,7 @@ export default function GameWorld() {
     }
   }, []);
 
-  // Touch/UI controls (ref-based for instant response)
+  // touch/UI controls (ref-based)
   const onMoveLeft = useCallback(() => {
     if (!running || paused) return;
     targetXRef.current = Math.max(-1, Math.round(targetXRef.current - 1));
@@ -163,30 +172,30 @@ export default function GameWorld() {
   }, [running, paused]);
 
   const tick = useCallback((delta) => {
-    const speed = 8; // units per second; world moves towards player
+    const speed = 8;
     setTime((t) => t + delta);
     setDistance((d) => d + speed * delta);
 
-    // Smooth lane movement (ref-based, eliminates React batching delay)
+    // smooth lane movement
     const lerpSpeed = 12;
     playerXRef.current += (targetXRef.current - playerXRef.current) * Math.min(1, lerpSpeed * delta);
     setPlayerX(playerXRef.current);
 
-    // Smooth tilt decay (exponential, no oscillation)
+    // tilt decay
     tiltRef.current *= Math.max(0, 1 - 8 * delta);
     if (Math.abs(tiltRef.current) < 0.005) tiltRef.current = 0;
     setTilt(tiltRef.current);
 
-    // Jump/Gravity (ref-based for frame-accurate physics)
+    // jump and gravity physics
     velYRef.current -= 20 * delta;
     playerYRef.current += velYRef.current * delta;
     if (playerYRef.current <= 1) {
       playerYRef.current = 1;
-      velYRef.current = 0; // Reset velocity on ground — prevents accumulation jitter
+      velYRef.current = 0;
     }
     setPlayerY(playerYRef.current);
 
-    // Crouch timer decay
+    // crouch timer decay
     if (crouchTimerRef.current > 0) {
       crouchTimerRef.current = Math.max(0, crouchTimerRef.current - delta);
       if (crouchTimerRef.current === 0 && isCrouchingRef.current) {
@@ -195,7 +204,7 @@ export default function GameWorld() {
       }
     }
 
-    // ✅ FIXED - Only move collectibles and obstacles (NOT environment objects)
+    // only move dynamic gameplay objects here
     setBananas((b) => 
       b.map((p) => [p[0], p[1], p[2] + speed * delta])
        .filter((p) => p[2] < 2)
@@ -208,12 +217,11 @@ export default function GameWorld() {
       })).filter((ob) => ob.position[2] < 2)
     );
     
-    // 🔍 DEBUG: Environment objects should NEVER be moved here
-    // If you see trees/rocks moving, check that they're not in obstacles array
+    // environment objects must remain static
 
-    // Spawn based on distance
+    // spawn items based on distance
     setLastSpawnDist((lsd) => {
-      const interval = 18; // meters between spawns
+      const interval = 18;
       let last = lsd;
       const toAddBananas = [];
       const toAddObs = [];
@@ -231,7 +239,8 @@ export default function GameWorld() {
       return last;
     });
 
-    // Collision + collection near playerZ ~ 0
+    // collision and collection checks
+    // VIDEO: Talk: collision checks, local leaderboard fallback, and level-unlock trigger
     setBananas((b) => {
       const remaining = [];
       for (const p of b) {
@@ -244,10 +253,10 @@ export default function GameWorld() {
             const total = Number(localStorage.getItem('totalBananas') || '0') + 1;
             localStorage.setItem('totalBananas', String(total));
             
-            // Check for level unlock
+            // check for level unlock
             checkLevelUnlock(total);
             
-            // Update local leaderboard fallback
+            // update local leaderboard fallback
             try {
               const lb = JSON.parse(localStorage.getItem('leaderboard') || '[]');
               const username = (JSON.parse(localStorage.getItem('authUser') || 'null')?.username) || 'Player';
@@ -266,16 +275,16 @@ export default function GameWorld() {
       const dx = Math.abs(ob.position[0] - playerXRef.current);
       const dz = Math.abs(ob.position[2] - playerZ);
       if (!paused && dx < 0.7 && Math.abs(dz) < 0.8) {
-        // Ability-based avoidance: jump over rocks, slide under logs
+        // ability-based avoidance (jump/slide)
         if (ob.type === 'rock' && playerYRef.current > 1.4) {
-          continue; // jumped over
+          continue;
         }
         if (ob.type === 'log' && isCrouchingRef.current) {
-          continue; // slid under
+          continue;
         }
         setPaused(true);
         setFeedback(null);
-        // Remove the collided obstacle to avoid repeated hits
+        // remove collided obstacle to avoid repeated hits
         setObstacles((o) => o.filter((oo) => oo.id !== ob.id));
         (async () => {
           try {
@@ -344,7 +353,7 @@ export default function GameWorld() {
       });
       try { gameEvents.emit('score:saved', { score, bananasCollected: score, duration: Math.floor(time) }); } catch {}
     } catch (_) {
-      // swallow errors to avoid crashing UI
+      // swallow network errors to avoid crashing the UI
     }
   }, [score, time]);
 
@@ -355,7 +364,7 @@ export default function GameWorld() {
   }, [running, started]);
 
   return (
-    <div style={{ height: 'calc(100vh - 50px)' }}>
+    <div className="game-container" style={{ height: 'calc(100vh - 54px)' }}>
       <Canvas shadows dpr={[1, 2]}>        
         <color attach="background" args={["#87CEEB"]} />
         <CameraRig playerX={playerX} />

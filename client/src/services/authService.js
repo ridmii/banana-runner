@@ -19,3 +19,18 @@ export async function me() {
   const { data } = await api.get('/api/auth/me');
   return data;
 }
+
+export async function updateProfile(payload) {
+  const { data } = await api.put('/api/auth/profile', payload);
+  return data;
+}
+
+export async function changePassword(payload) {
+  const { data } = await api.put('/api/auth/password', payload);
+  return data;
+}
+
+export async function getAvatarOptions() {
+  const { data } = await api.get('/api/auth/avatars');
+  return data;
+}

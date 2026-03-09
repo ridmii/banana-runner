@@ -9,7 +9,7 @@ export default function LevelUnlockCelebration({ level, onComplete }) {
       setVisible(true);
       setAnimating(true);
       
-      // Auto-hide after 3 seconds
+      // auto-hide after 3 seconds
       const timer = setTimeout(() => {
         setAnimating(false);
         setTimeout(() => {

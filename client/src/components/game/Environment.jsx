@@ -211,16 +211,12 @@ function Bird({ position }) {
 }
 
 export default function EnvironmentComponent() {
-  // 🔧 DEBUG: Mark this entire component as static environment
-  useEffect(() => {
-    console.log('🌳 Environment component mounted - All objects should be STATIC');
-    console.log('🚫 NO ANIMATIONS: Float, useFrame, or movement logic removed');
-    console.log('✅ Trees, rocks, rivers, birds are now completely static');
-  }, []);
+  // Ridmi: environment is static (no runtime movement)
+  useEffect(() => {}, []);
 
   return (
     <>
-      {/* 🔧 STATIC ENVIRONMENT - These objects should NEVER move */}
+      {/* Ridmi: static environment objects */}
       <mesh position={[0, 25, -50]} scale={[200, 50, 1]}>
         <planeGeometry args={[1, 1]} />
         <meshBasicMaterial 
@@ -291,7 +287,7 @@ export default function EnvironmentComponent() {
         <group 
           key={`path-${i}`} 
           position={[i % 2 === 0 ? -4 : 4, 0, -i * 4]}
-          userData={{ static: true, environment: true }} // 🔧 Mark as static
+          userData={{ static: true, environment: true }}
         >
           <mesh position={[0, 0.8, 0]} castShadow receiveShadow>
             <cylinderGeometry args={[0.1, 0.15, 1.6, 8]} />
