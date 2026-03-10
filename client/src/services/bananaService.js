@@ -24,8 +24,9 @@ export const getBananaImage = async () => {
 export const getBananaQuestion = async () => {
   try {
     const data = await fetchBananaData();
-    // API returns the numeric solution under different keys depending on version
-    const solution = data.answer ?? data.solution ?? data.sol ?? null;
+      // normalize solution key from various API versions
+      // VIDEO: Talk: banana API normalization (handle older/newer responses)
+      const solution = data.answer ?? data.solution ?? data.sol ?? null;
     return { image: data.image || FALLBACK_IMAGE, answer: solution };
   } catch (_) {
     return { image: FALLBACK_IMAGE, answer: null };
