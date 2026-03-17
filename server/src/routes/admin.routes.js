@@ -1,10 +1,14 @@
 import { Router } from 'express';
-import { listUsers, deleteUser, adminStats } from '../controllers/admin.controller.js';
-import { requireAuth } from '../middleware/authMiddleware.js';
-import { requireAdmin } from '../middleware/adminMiddleware.js';
+import { listUsers, deleteUser, adminStats, setUserRole, deleteScore } from '../controllers/admin.controller.js';
+import { requireAuth, requireRole } from '../middleware/authMiddleware.js';
 
 const router = Router();
-router.get('/users', requireAuth, requireAdmin, listUsers);
-router.delete('/users/:id', requireAuth, requireAdmin, deleteUser);
-router.get('/stats', requireAuth, requireAdmin, adminStats);
+
+// All admin routes require auth and admin role
+router.get('/users', requireAuth, requireRole('admin'), listUsers);
+router.post('/users/:userId/role', requireAuth, requireRole('admin'), setUserRole);
+router.delete('/users/:id', requireAuth, requireRole('admin'), deleteUser);
+router.delete('/scores/:scoreId', requireAuth, requireRole('admin'), deleteScore);
+router.get('/stats', requireAuth, requireRole('admin'), adminStats);
+
 export default router;

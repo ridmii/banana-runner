@@ -3,6 +3,7 @@ import { User, AVATAR_OPTIONS } from '../models/User.js';
 import { signToken } from '../utils/jwt.js';
 import { Score } from '../models/Score.js';
 import { computeAchievements } from '../utils/achievements.js';
+import { env } from '../config/env.js';
 
 // Password validation rules
 function validatePassword(password) {
@@ -59,7 +60,7 @@ export async function login(req, res) {
       maxAge: 7 * 24 * 60 * 60 * 1000,
       path: '/',
     });
-    // VIDEO: Talk: token is set as an httpOnly cookie to protect from XSS
+    
     user.lastLogin = new Date();
     await user.save();
     return res.json({ user: { id: user._id, username: user.username, email: user.email, role: user.role } });
@@ -198,4 +199,38 @@ export async function changePassword(req, res) {
 // Get available avatar options
 export async function getAvatarOptions(req, res) {
   return res.json({ avatars: AVATAR_OPTIONS });
+}
+
+// OAuth callback helper - issues JWT cookie and redirects
+export async function handleOAuthCallback(req, res) {
+  try {
+    if (!req.user) {
+      return res.redirect(`${env.clientUrl}/login?error=oauth_failed`);
+    }
+    
+    // Update last login
+    req.user.lastLogin = new Date();
+    await req.user.save();
+    
+    // Issue JWT token
+    const token = signToken({ id: req.user._id, role: req.user.role, username: req.user.username });
+    const isProd = env.nodeEnv === 'production';
+    res.cookie('token', token, {
+      httpOnly: true,
+      sameSite: isProd ? 'none' : 'lax',
+      secure: isProd,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: '/',
+    });
+    
+    // Store auth user in localStorage-friendly format via query param redirect
+    const userInfo = { id: req.user._id, username: req.user.username, email: req.user.email, role: req.user.role };
+    const encodedUser = encodeURIComponent(JSON.stringify(userInfo));
+    
+    // Redirect to frontend home with user data
+    res.redirect(`${env.clientUrl}/?oauth_success=true&user=${encodedUser}`);
+  } catch (e) {
+    console.error('OAuth callback error:', e);
+    res.redirect(`${env.clientUrl}/login?error=oauth_callback_failed`);
+  }
 }
