@@ -6,8 +6,8 @@ const UserSchema = new mongoose.Schema(
   {
     username: { type: String, unique: true, required: true },
     email: { type: String, unique: true, required: true },
-    password: { type: String, required: true },
-    role: { type: String, enum: ['user', 'admin'], default: 'user' },
+    password: { type: String, default: '' }, // Empty for OAuth users
+    role: { type: String, enum: ['player', 'admin'], default: 'player' },
     // Virtual Identity fields
     avatar: { type: String, default: '🐒', enum: AVATAR_OPTIONS },
     bio: { type: String, default: '', maxlength: 120 },
