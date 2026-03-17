@@ -1,4 +1,3 @@
-//simple event bus used to decouple game logic and UI
 class GameEvents {
   constructor() {
     this.events = {};
