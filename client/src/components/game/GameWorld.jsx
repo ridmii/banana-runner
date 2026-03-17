@@ -240,7 +240,6 @@ export default function GameWorld() {
     });
 
     // collision and collection checks
-    // VIDEO: Talk: collision checks, local leaderboard fallback, and level-unlock trigger
     setBananas((b) => {
       const remaining = [];
       for (const p of b) {
