@@ -13,10 +13,8 @@ export const env = {
   jwtSecret: process.env.JWT_SECRET || 'devsecret',
   clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
   clientOrigins: parseOrigins(process.env.CLIENT_URLS || ''),
+  appUrl: process.env.APP_URL || 'http://localhost:5000',
+  nodeEnv: process.env.NODE_ENV || 'development',
   disableAuth: process.env.DISABLE_AUTH === 'true',
-  disableDb: process.env.DISABLE_DB === 'true',
-  googleClientId: process.env.GOOGLE_CLIENT_ID,
-  googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  githubClientId: process.env.GITHUB_CLIENT_ID,
-  githubClientSecret: process.env.GITHUB_CLIENT_SECRET,
+  disableDb: process.env.DISABLE_DB === 'true'
 };
