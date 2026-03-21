@@ -6,8 +6,12 @@ const UserSchema = new mongoose.Schema(
   {
     username: { type: String, unique: true, required: true },
     email: { type: String, unique: true, required: true },
-    password: { type: String, required: true },
+    password: { type: String, default: null }, // null for OAuth-only users
     role: { type: String, enum: ['user', 'admin'], default: 'user' },
+    // OAuth fields
+    googleId: { type: String, unique: true, sparse: true },
+    githubId: { type: String, unique: true, sparse: true },
+    oauthProvider: { type: String, enum: ['local', 'google', 'github'], default: 'local' },
     // Virtual Identity fields
     avatar: { type: String, default: '🐒', enum: AVATAR_OPTIONS },
     bio: { type: String, default: '', maxlength: 120 },

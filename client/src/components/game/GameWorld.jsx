@@ -239,8 +239,7 @@ export default function GameWorld() {
       return last;
     });
 
-    // collision and collection checks
-    // VIDEO: Talk: collision checks, local leaderboard fallback, and level-unlock trigger
+  
     setBananas((b) => {
       const remaining = [];
       for (const p of b) {
@@ -275,7 +274,6 @@ export default function GameWorld() {
       const dx = Math.abs(ob.position[0] - playerXRef.current);
       const dz = Math.abs(ob.position[2] - playerZ);
       if (!paused && dx < 0.7 && Math.abs(dz) < 0.8) {
-        // ability-based avoidance (jump/slide)
         if (ob.type === 'rock' && playerYRef.current > 1.4) {
           continue;
         }
@@ -284,7 +282,6 @@ export default function GameWorld() {
         }
         setPaused(true);
         setFeedback(null);
-        // remove collided obstacle to avoid repeated hits
         setObstacles((o) => o.filter((oo) => oo.id !== ob.id));
         (async () => {
           try {
@@ -353,7 +350,7 @@ export default function GameWorld() {
       });
       try { gameEvents.emit('score:saved', { score, bananasCollected: score, duration: Math.floor(time) }); } catch {}
     } catch (_) {
-      // swallow network errors to avoid crashing the UI
+      
     }
   }, [score, time]);
 

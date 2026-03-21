@@ -20,6 +20,17 @@ export async function me() {
   return data;
 }
 
+// OAuth methods
+export async function googleAuth(token) {
+  const { data } = await api.post('/api/auth/google', { token });
+  return data;
+}
+
+export async function githubAuth(code) {
+  const { data } = await api.post('/api/auth/github', { code });
+  return data;
+}
+
 export async function updateProfile(payload) {
   const { data } = await api.put('/api/auth/profile', payload);
   return data;

@@ -27,13 +27,28 @@ export function AuthProvider({ children }) {
         const data = await fetchMe();
         setUser(data.user);
         try { localStorage.setItem('authUser', JSON.stringify(data.user)); } catch {}
-      } catch (_) {
-        // Fallback to cached user if available to avoid UI reset
-        try {
-          const cached = JSON.parse(localStorage.getItem('authUser') || 'null');
-          setUser(cached);
-        } catch {
-          setUser(null);
+      } catch (err) {
+      
+        if (err.response?.status === 401) {
+          try {
+            const cached = JSON.parse(localStorage.getItem('authUser') || 'null');
+            if (cached) {
+              setUser(cached);
+            } else {
+              setUser(null);
+            }
+          } catch {
+            setUser(null);
+          }
+        } else {
+      
+          console.error('Auth error:', err.message);
+          try {
+            const cached = JSON.parse(localStorage.getItem('authUser') || 'null');
+            setUser(cached);
+          } catch {
+            setUser(null);
+          }
         }
       } finally {
         setLoading(false);

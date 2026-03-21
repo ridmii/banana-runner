@@ -59,7 +59,7 @@ export async function login(req, res) {
       maxAge: 7 * 24 * 60 * 60 * 1000,
       path: '/',
     });
-    // VIDEO: Talk: token is set as an httpOnly cookie to protect from XSS
+    
     user.lastLogin = new Date();
     await user.save();
     return res.json({ user: { id: user._id, username: user.username, email: user.email, role: user.role } });

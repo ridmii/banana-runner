@@ -21,7 +21,8 @@ app.use(
       if (!origin) return callback(null, true);
       try {
         const url = new URL(origin);
-        if (allowedOrigins.has(origin) || (url.hostname === 'localhost' || url.hostname === '127.0.0.1')) {
+        // Allow localhost on any port, plus explicit origins
+        if (allowedOrigins.has(origin) || url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
           return callback(null, true);
         }
       } catch (_) {}
