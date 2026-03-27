@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "buildCommand": "npm run build",
+  "outputDirectory": "./client/dist",
+  "installCommand": "npm install",
+  "env": {
+    "VITE_SERVER_URL": "@vite-server-url"
+  }
+}
