@@ -542,7 +542,6 @@ function RealisticRobot({ crouch = false, tilt = 0 }) {
         </mesh>
       </group>
       
-      {/* HYDRAULIC JOINT DETAILS - Industrial accents */}
       {/* Shoulder joints */}
       {[-0.45, 0.45].map((x, i) => (
         <mesh key={`shoulder-${i}`} position={[x, 0.4, 0]} castShadow>
