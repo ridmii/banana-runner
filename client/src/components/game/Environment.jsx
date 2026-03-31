@@ -211,12 +211,12 @@ function Bird({ position }) {
 }
 
 export default function EnvironmentComponent() {
-  // Ridmi: environment is static (no runtime movement)
+  //environment is static (no runtime movement)
   useEffect(() => {}, []);
 
   return (
     <>
-      {/* Ridmi: static environment objects */}
+      {/*static environment objects */}
       <mesh position={[0, 25, -50]} scale={[200, 50, 1]}>
         <planeGeometry args={[1, 1]} />
         <meshBasicMaterial 

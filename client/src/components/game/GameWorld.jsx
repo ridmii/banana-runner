@@ -385,16 +385,16 @@ export default function GameWorld() {
         <hemisphereLight intensity={0.4} groundColor="#8B7355" color="#87CEEB" />
         <pointLight position={[0, 8, 6]} intensity={0.5} distance={15} decay={2} />
 
-        {/* CLEAN SCENE ARCHITECTURE - University Project Standard */}
         
-        {/* STATIC ENVIRONMENT: Trees, rocks, terrain - NEVER moves */}
+        
+        
         <group name="StaticEnvironment" userData={{ static: true, moveInGameLoop: false }} position={[0, 0, 0]}>
           <fog attach="fog" args={["#87CEEB", 20, 100]} />
           <EnvironmentComponent />
           <Terrain />
         </group>
 
-        {/* DYNAMIC GAMEPLAY: Objects that move toward player */}
+        
         <group name="DynamicGameplay" userData={{ static: false, moveInGameLoop: true }}>
           <BananaSpawner bananas={bananas} />
           <ObstacleSpawner obstacles={obstacles} />

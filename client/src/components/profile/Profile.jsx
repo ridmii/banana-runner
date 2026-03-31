@@ -97,7 +97,7 @@ export default function Profile() {
     return () => gameEvents.off('score:saved', onSaved);
   }, []);
 
-  // Ridmi: save username
+  // save username
   const onSaveUsername = async () => {
     try {
       const res = await updateProfile({ username: username.trim() });
@@ -110,7 +110,7 @@ export default function Profile() {
     }
   };
 
-  // Ridmi: save avatar
+  // save avatar
   const onPickAvatar = async (emoji) => {
     setAvatar(emoji);
     setShowAvatarPicker(false);
@@ -123,7 +123,7 @@ export default function Profile() {
     }
   };
 
-  // Ridmi: save bio
+  // save bio
   const onSaveBio = async () => {
     try {
       await updateProfile({ bio: bioInput });
@@ -135,7 +135,7 @@ export default function Profile() {
     }
   };
 
-  // Ridmi: switch preferred character
+  // switch preferred character
   const onSwitchCharacter = async (char) => {
     setPreferredCharacter(char);
     try {
@@ -147,7 +147,7 @@ export default function Profile() {
     }
   };
 
-  // Ridmi: change password flow
+  // change password flow
   const onChangePassword = async () => {
     setPwMsg({ text: '', type: '' });
     if (!currentPw || !newPw) { setPwMsg({ text: 'Fill in all fields', type: 'error' }); return; }
