@@ -1,4 +1,4 @@
-const GOOGLE_CLIENT_ID = '367672186493-b3npbfm8ke6vpoms2irel1i55m4ck1ja.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '367672186493-b3npbfm8ke6vpoms2irel1i55m4ck1ja.apps.googleusercontent.com';
 let googleInitialized = false;
 let googleInitPromise = null;
 

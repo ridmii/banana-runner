@@ -6,6 +6,9 @@ export default defineConfig({
   server: {
     port: 5175,
     strictPort: false,
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+    },
   },
   define: {
     'import.meta.env.VITE_SERVER_URL': JSON.stringify(
