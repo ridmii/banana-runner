@@ -1,5 +1,6 @@
 import axios from 'axios';
 import mongoose from 'mongoose';
+import { OAuth2Client } from 'google-auth-library';
 import { User } from '../models/User.js';
 import { signToken } from '../utils/jwt.js';
 import { env } from '../config/env.js';
@@ -22,12 +23,26 @@ export async function googleAuth(req, res) {
     const { token } = req.body; // ID token from Google Sign-In SDK
     if (!token) return res.status(400).json({ message: 'Missing token' });
 
-    // Verify token with Google
-    const googleResponse = await axios.get(
-      `https://oauth2.googleapis.com/tokeninfo?id_token=${token}`
-    );
-    const { email, name, picture } = googleResponse.data;
-    const googleId = googleResponse.data.sub || googleResponse.data.user_id;
+    // Verify the ID token using the official google-auth-library
+    const clientId = env.googleClientId;
+    if (!clientId) {
+      return res.status(500).json({ message: 'GOOGLE_CLIENT_ID is not set on the server' });
+    }
+
+    const client = new OAuth2Client(clientId);
+    let payload;
+    try {
+      const ticket = await client.verifyIdToken({
+        idToken: token,
+        audience: clientId,
+      });
+      payload = ticket.getPayload();
+    } catch (verifyErr) {
+      console.error('Google token verification failed:', verifyErr.message);
+      return res.status(401).json({ message: 'Invalid Google token', error: verifyErr.message });
+    }
+
+    const { sub: googleId, email, name } = payload;
 
     if (!email) return res.status(400).json({ message: 'Could not retrieve email from Google' });
 
@@ -48,17 +63,14 @@ export async function googleAuth(req, res) {
         user.oauthProvider = 'google';
       }
     } else {
-      // New user - create with simple username, append random string if duplicate
+      // New user - create with username, append number if duplicate
       let baseUsername = name?.split(' ')[0] || email.split('@')[0];
       let username = baseUsername;
-      
-      // Check for username collision
       let suffix = 1;
       while (await User.findOne({ username })) {
         username = `${baseUsername}${suffix}`;
         suffix++;
       }
-
       user = await User.create({
         username,
         email,
@@ -77,12 +89,10 @@ export async function googleAuth(req, res) {
 
     return res.json({ user: { id: user._id, username: user.username, email: user.email, role: user.role } });
   } catch (err) {
-    console.error('Google auth error:', err.message, err.response?.data || err);
+    console.error('Google auth error:', err.message, err);
     return res.status(500).json({ 
       message: 'Google authentication failed', 
-      error: err.message,
-      stack: err.stack,
-      googleError: err.response?.data
+      error: err.message
     });
   }
 }
