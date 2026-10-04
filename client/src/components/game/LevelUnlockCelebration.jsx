@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { playSuccess } from '../../utils/sfx.js';
 
 export default function LevelUnlockCelebration({ level, onComplete }) {
   const [visible, setVisible] = useState(false);
@@ -8,6 +9,7 @@ export default function LevelUnlockCelebration({ level, onComplete }) {
     if (level) {
       setVisible(true);
       setAnimating(true);
+      playSuccess(); // Play celebration sound
       
       // auto-hide after 3 seconds
       const timer = setTimeout(() => {
@@ -20,7 +22,7 @@ export default function LevelUnlockCelebration({ level, onComplete }) {
 
       return () => clearTimeout(timer);
     }
-  }, [level, onComplete]);
+  }, [level]); // Removed onComplete to prevent constant resets from parent re-renders
 
   if (!visible || !level) return null;
 
