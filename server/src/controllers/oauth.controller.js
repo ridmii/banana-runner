@@ -69,7 +69,12 @@ export async function googleAuth(req, res) {
     return res.json({ user: { id: user._id, username: user.username, email: user.email, role: user.role } });
   } catch (err) {
     console.error('Google auth error:', err.message, err.response?.data || err);
-    return res.status(500).json({ message: 'Google authentication failed', error: err.message });
+    return res.status(500).json({ 
+      message: 'Google authentication failed', 
+      error: err.message,
+      stack: err.stack,
+      googleError: err.response?.data
+    });
   }
 }
 
