@@ -12,7 +12,16 @@ const app = express();
 app.set('trust proxy', 1);
 app.use(express.json());
 app.use(cookieParser());
-const allowedOrigins = new Set([env.clientUrl, ...env.clientOrigins, 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:5176', 'http://127.0.0.1:5173']);
+const allowedOrigins = new Set([
+  env.clientUrl,
+  ...env.clientOrigins,
+  'https://eatbananas.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:5175',
+  'http://localhost:5176',
+  'http://127.0.0.1:5173',
+]);
 
 app.use(
   cors({
