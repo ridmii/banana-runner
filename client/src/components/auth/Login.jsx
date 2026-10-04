@@ -50,6 +50,7 @@ export default function Login() {
 
   const handleGithubLogin = () => {
     const redirectUri = `${window.location.origin}/login`;
+    sessionStorage.setItem('github_redirect_uri', redirectUri);
     const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=user:email`;
     window.location.href = githubAuthUrl;
   };
@@ -58,10 +59,11 @@ export default function Login() {
     setLoading(true);
     setError('');
     try {
-      const data = await githubAuth(code);
+      const redirectUri = sessionStorage.getItem('github_redirect_uri') || `${window.location.origin}/login`;
+      sessionStorage.removeItem('github_redirect_uri');
+      const data = await githubAuth(code, redirectUri);
       if (data?.user?.id) {
         setUser(data.user);
-        // Navigate immediately after setting user
         navigate('/');
       } else {
         throw new Error('Invalid response from GitHub authentication');

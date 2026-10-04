@@ -26,8 +26,8 @@ export async function googleAuth(token) {
   return data;
 }
 
-export async function githubAuth(code) {
-  const { data } = await api.post('/api/auth/github', { code });
+export async function githubAuth(code, redirectUri) {
+  const { data } = await api.post('/api/auth/github', { code, redirectUri });
   return data;
 }
 

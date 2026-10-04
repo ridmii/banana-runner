@@ -100,7 +100,7 @@ export async function googleAuth(req, res) {
 // GitHub OAuth callback
 export async function githubAuth(req, res) {
   try {
-    const { code } = req.body; // Authorization code from GitHub
+    const { code, redirectUri } = req.body; // Authorization code + redirect URI from frontend
     if (!code) return res.status(400).json({ message: 'Missing code' });
 
     if (!env.githubClientId || !env.githubClientSecret) {
@@ -108,14 +108,14 @@ export async function githubAuth(req, res) {
       return res.status(500).json({ message: 'GitHub OAuth not configured' });
     }
 
-    // Exchange code for access token
+    // Exchange code for access token — redirect_uri must exactly match what was sent to GitHub
     const tokenResponse = await axios.post(
       'https://github.com/login/oauth/access_token',
       {
         client_id: env.githubClientId,
         client_secret: env.githubClientSecret,
         code,
-        redirect_uri: `${env.clientUrl}/login`,
+        redirect_uri: redirectUri || `${env.clientUrl}/login`,
       },
       { headers: { Accept: 'application/json' } }
     );
