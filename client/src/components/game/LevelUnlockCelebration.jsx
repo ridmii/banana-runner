@@ -8,8 +8,11 @@ export default function LevelUnlockCelebration({ level, onComplete }) {
   useEffect(() => {
     if (level) {
       setVisible(true);
-      setAnimating(true);
-      playSuccess(); // Play celebration sound
+      
+      requestAnimationFrame(() => {
+        setAnimating(true);
+        try { playSuccess(); } catch (e) {} // Play celebration sound safely
+      });
       
       // auto-hide after 3 seconds
       const timer = setTimeout(() => {
@@ -24,7 +27,7 @@ export default function LevelUnlockCelebration({ level, onComplete }) {
     }
   }, [level]); // Removed onComplete to prevent constant resets from parent re-renders
 
-  if (!visible || !level) return null;
+  if (!level) return null;
 
   const getLevelInfo = (levelNum) => {
     const levels = {
@@ -38,7 +41,10 @@ export default function LevelUnlockCelebration({ level, onComplete }) {
   const levelInfo = getLevelInfo(level);
 
   return (
-    <div className={`level-unlock-overlay ${animating ? 'animate' : 'fade-out'}`}>
+    <div 
+      className={`level-unlock-overlay ${animating ? 'animate' : 'fade-out'}`}
+      style={{ display: visible ? 'flex' : 'none' }}
+    >
       <div className="celebration-container">
         <div className="celebration-fireworks">
           <div className="firework"></div>
