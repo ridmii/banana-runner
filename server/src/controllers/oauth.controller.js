@@ -1,4 +1,5 @@
 import axios from 'axios';
+import mongoose from 'mongoose';
 import { User } from '../models/User.js';
 import { signToken } from '../utils/jwt.js';
 import { env } from '../config/env.js';
@@ -29,6 +30,14 @@ export async function googleAuth(req, res) {
     const googleId = googleResponse.data.sub || googleResponse.data.user_id;
 
     if (!email) return res.status(400).json({ message: 'Could not retrieve email from Google' });
+
+    // Ensure database is connected before querying
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(500).json({ 
+        message: 'Database not connected on Vercel', 
+        error: 'MONGO_URI is missing in Vercel Environment Variables' 
+      });
+    }
 
     // Find or create user - use email as primary key for OAuth
     let user = await User.findOne({ email });
