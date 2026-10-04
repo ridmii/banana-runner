@@ -87,7 +87,7 @@ export default function GameWorld() {
     const levels = [
       { level: 1, required: 25 },
       { level: 2, required: 75 },
-      { level: 3, required: 150 }
+      { level: 3, required: 125 }
     ];
 
     for (const levelInfo of levels) {
@@ -246,24 +246,28 @@ export default function GameWorld() {
         const dx = Math.abs(p[0] - playerXRef.current);
         const dz = Math.abs(p[2] - playerZ);
         if (dx < 0.6 && Math.abs(dz) < 0.8) {
+          try { playCollect(); } catch {}
+          
+          let newTotal;
           setScore((s) => {
-            try { playCollect(); } catch {}
             const ns = s + 1;
-            const total = Number(localStorage.getItem('totalBananas') || '0') + 1;
-            localStorage.setItem('totalBananas', String(total));
-            
-            // check for level unlock
-            checkLevelUnlock(total);
+            newTotal = Number(localStorage.getItem('totalBananas') || '0') + 1;
+            localStorage.setItem('totalBananas', String(newTotal));
             
             // update local leaderboard fallback
             try {
               const lb = JSON.parse(localStorage.getItem('leaderboard') || '[]');
               const username = (JSON.parse(localStorage.getItem('authUser') || 'null')?.username) || 'Player';
-              lb.push({ username, bananas: total, score: total, ts: Date.now() });
+              lb.push({ username, bananas: newTotal, score: newTotal, ts: Date.now() });
               localStorage.setItem('leaderboard', JSON.stringify(lb.slice(-100)));
             } catch {}
             return ns;
           });
+          
+          // Call state updates outside the setState callback
+          if (newTotal) {
+            checkLevelUnlock(newTotal);
+          }
         } else {
           remaining.push(p);
         }
