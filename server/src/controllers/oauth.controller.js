@@ -23,35 +23,40 @@ export async function googleAuth(req, res) {
 
     // Verify token with Google
     const googleResponse = await axios.get(
-      `https://www.googleapis.com/oauth2/v1/tokeninfo?id_token=${token}`
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${token}`
     );
     const { email, name, picture } = googleResponse.data;
-    const googleId = googleResponse.data.user_id;
+    const googleId = googleResponse.data.sub || googleResponse.data.user_id;
 
     if (!email) return res.status(400).json({ message: 'Could not retrieve email from Google' });
 
     // Find or create user - use email as primary key for OAuth
-    let user = await User.findOne({ email, oauthProvider: 'google' });
-    if (!user) {
-      // Check if email exists at all
-      user = await User.findOne({ email });
-      if (user) {
-        // Existing account - link to Google
+    let user = await User.findOne({ email });
+    if (user) {
+      // Existing account - link to Google if not already linked
+      if (!user.googleId) {
         user.googleId = googleId;
         user.oauthProvider = 'google';
-      } else {
-        // New user - create with simple username
-        let username = name?.split(' ')[0] || email.split('@')[0];
-        user = await User.create({
-          username,
-          email,
-          googleId,
-          oauthProvider: 'google',
-          password: null,
-        });
       }
-    } else if (!user.googleId) {
-      user.googleId = googleId;
+    } else {
+      // New user - create with simple username, append random string if duplicate
+      let baseUsername = name?.split(' ')[0] || email.split('@')[0];
+      let username = baseUsername;
+      
+      // Check for username collision
+      let suffix = 1;
+      while (await User.findOne({ username })) {
+        username = `${baseUsername}${suffix}`;
+        suffix++;
+      }
+
+      user = await User.create({
+        username,
+        email,
+        googleId,
+        oauthProvider: 'google',
+        password: null,
+      });
     }
 
     user.lastLogin = new Date();
@@ -117,26 +122,31 @@ export async function githubAuth(req, res) {
     if (!email) return res.status(400).json({ message: 'Could not retrieve email from GitHub' });
 
     // Find or create user - use email as primary key for OAuth
-    let user = await User.findOne({ email, oauthProvider: 'github' });
-    if (!user) {
-      user = await User.findOne({ email });
-      if (user) {
-        // Link existing account to GitHub
+    let user = await User.findOne({ email });
+    if (user) {
+      // Link existing account to GitHub if not already linked
+      if (!user.githubId) {
         user.githubId = githubId;
         user.oauthProvider = 'github';
-      } else {
-        // Create new user with simple username
-        let username = login || name?.split(' ')[0] || email.split('@')[0];
-        user = await User.create({
-          username,
-          email,
-          githubId,
-          oauthProvider: 'github',
-          password: null,
-        });
       }
-    } else if (!user.githubId) {
-      user.githubId = githubId;
+    } else {
+      // Create new user with simple username, append number if duplicate
+      let baseUsername = login || name?.split(' ')[0] || email.split('@')[0];
+      let username = baseUsername;
+      
+      let suffix = 1;
+      while (await User.findOne({ username })) {
+        username = `${baseUsername}${suffix}`;
+        suffix++;
+      }
+
+      user = await User.create({
+        username,
+        email,
+        githubId,
+        oauthProvider: 'github',
+        password: null,
+      });
     }
 
     user.lastLogin = new Date();
