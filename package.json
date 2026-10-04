@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "A 3D endless runner built with React, Three.js (@react-three/fiber), and a Node/Express/MongoDB backend. Demonstrates four themes: Virtual Identity, Interoperability, Event-Driven Programming, and Version Control.",
   "main": "index.js",
+  "type": "module",
   "private": true,
   "workspaces": [
     "client",
